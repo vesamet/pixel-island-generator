@@ -6,7 +6,6 @@
         The page may become unresponsive while generating the map.
       </p>
     </div>
-    <div class="copyright-overlay"></div>
     <Board
       :width="world.size.width * world.size.block"
       :height="world.size.height * world.size.block"
@@ -28,7 +27,7 @@
           </div>
           <div class="input-box">
             Size:
-            <select v-model="size" name="size" style="max-width: 120px;">
+            <select v-model="size" name="size" style="max-width: 120px">
               <option value="small">Small (500x500)</option>
               <option value="medium">Medium (1000x1000)</option>
             </select>
@@ -63,6 +62,19 @@
         </div>
       </template>
     </Board>
+        <div class="footer">
+      <p>
+        Made by
+        <a href="https://github.com/vesamet/" target="_blank" class="creator-link"
+          >Gwenaël Guyot</a
+        >
+        <a
+          href="https://github.com/vesamet/pixel-island-generator"
+          target="_blank"
+          ><button> <img src="@/assets/github.svg" alt="github"> </button></a
+        >
+      </p>
+    </div>
   </div>
 </template>
 
@@ -135,6 +147,7 @@ input,
 select {
   font-family: 'Langar', cursive;
 }
+
 .container {
   position: relative;
 }
@@ -147,6 +160,12 @@ h1 {
 }
 h1 > span {
   font-size: 0.6em;
+}
+a.creator-link {
+  color: white;
+  text-shadow: 0 0 3px rgb(57, 29, 158), 0 0 3px black;
+  text-decoration: none;
+  padding-right: 10px;
 }
 .map {
   position: absolute;
@@ -207,5 +226,18 @@ button:hover {
   position: relative;
   top: 50%;
   transform: translateY(-50%);
+}
+.footer {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    pointer-events: all;
+    z-index: 3;
+}
+.footer img {
+  width:20px;
+}
+.footer button {
+  padding: 3px 3px 0 3px;
 }
 </style>

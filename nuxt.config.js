@@ -7,11 +7,11 @@ export default {
 
   // Global page headers (https://go.nuxtjs.dev/config-head)
   head: {
-    title: 'world2',
+    title: 'Pixel Island Generator',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: '' },
+      { hid: 'description', name: 'description', content: 'A toy to procedurally generate pixel map with over 20 biomes.' },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
@@ -36,4 +36,7 @@ export default {
   generate: {
     dir: 'docs',
   },
+  router: {
+    base: '/pixel-island-generator/'
+  }
 }

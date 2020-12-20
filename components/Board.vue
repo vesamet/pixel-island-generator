@@ -118,7 +118,6 @@ export default {
   position: relative;
   margin: 0;
   padding: 0;
-  background-image: url(https://i.ibb.co/hyPfS9T/background.png);
 }
 .board img {
   width: 100%;
