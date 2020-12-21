@@ -2,6 +2,7 @@
 A toy to procedurally generate pixel map with over 20 biomes.
 It also act as a proof of concept for rendering base64 images.
 
+You may play with it here: https://vesamet.github.io/pixel-island-generator/
 ## Build Setup
 
 ```bash

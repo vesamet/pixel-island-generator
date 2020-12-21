@@ -11,7 +11,13 @@
       :height="world.size.height * world.size.block"
     >
       <template v-slot:board>
-        <img :src="mapBase64" alt="Red dot" class="map" />
+        <img v-if="mapBase64" :src="mapBase64" alt="Red dot" class="map" />
+        <canvas
+          ref="canvas"
+          :width="world.size.width"
+          :height="world.size.height"
+          class="map"
+        ></canvas>
       </template>
       <template v-slot:controls>
         <h1>Pixel island generator <span>0.5</span></h1>
@@ -55,24 +61,38 @@
             <button @click="randomSeed('moisture')">Random</button>
           </div>
           <br />
-          <a v-if="mapBase64" download="map.png" :href="mapBase64"
+          <div class="input-box">
+            Render mode:
+            <select v-model="world.format" name="size" style="max-width: 120px">
+              <option value="png">Base64</option>
+              <option value="collection">Canvas</option>
+            </select>
+          </div>
+          <br />
+          <a
+            v-show="mapBase64 || canvas"
+            download="map.png"
+            :href="canvas ? $refs.canvas.toDataURL() : mapBase64"
             ><button>Download</button></a
           >
           <button class="render-btn" @click="render()">Generate</button>
         </div>
       </template>
     </Board>
-        <div class="footer">
+    <div class="footer">
       <p>
         Made by
-        <a href="https://github.com/vesamet/" target="_blank" class="creator-link"
+        <a
+          href="https://github.com/vesamet/"
+          target="_blank"
+          class="creator-link"
           >Gwenaël Guyot</a
         >
         <a
           href="https://github.com/vesamet/pixel-island-generator"
           target="_blank"
-          ><button> <img src="@/assets/github.svg" alt="github"> </button></a
-        >
+          ><button><img src="@/assets/github.svg" alt="github" /></button
+        ></a>
       </p>
     </div>
   </div>
@@ -98,16 +118,21 @@ export default {
           moisture: '48424901343056239472',
         },
         type: 'archipelago',
-        format: 'png',
+        format: 'collection',
       },
       size: 'small',
       mapBase64: '',
+      canvas: false,
       loading: false,
       displaySettings: true,
     }
   },
   methods: {
     async render() {
+      // Reset render state
+      this.mapBase64 = ''
+      this.canvas = false
+      // Set size
       switch (this.size) {
         case 'small':
           this.world.size.width = 500
@@ -119,16 +144,38 @@ export default {
           break
       }
       this.loading = true
+      // Insure the browser display the loading overlay
       await this.sleep(200)
       this.$nextTick(() => {
-        this.mapBase64 = world.generate(this.world)
+        // Define the render type and perform it.
+        switch (this.world.format) {
+          case 'png':
+            this.mapBase64 = world.generate(this.world)
+            break
+          case 'collection':
+            this.canvas = true
+            let blocks = world.generate(this.world)
+            const ctx = this.$refs.canvas.getContext('2d')
+            blocks.forEach((block) => {
+              let rgb = block.biome.rgb
+              ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`
+              ctx.fillRect(block.position.x - 1, block.position.y - 1, 1, 1)
+            })
+            break
+        }
         this.loading = false
       })
     },
     randomSeed(seedType) {
       this.world.seed[seedType] = world.getRandomSeed(20)
     },
-
+    downloadCanvas() {
+      this.mapBase64 = this.$refs.canvas.toDataURL()
+      // var link = document.createElement('a')
+      // link.download = 'map.png'
+      // link.href = this.$refs.canvas.toDataURL()
+      // link.click()
+    },
     sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms))
     },
@@ -140,6 +187,7 @@ export default {
 @import url('https://fonts.googleapis.com/css2?family=Langar&display=swap');
 body {
   font-size: 12px;
+  background-color: #3670b5;
 }
 body,
 button,
@@ -174,9 +222,7 @@ a.creator-link {
   width: 100%;
   height: 100%;
   z-index: 1;
-}
-body {
-  background-color: #7dafda;
+  image-rendering: crisp-edges;
 }
 .input-box {
   background-color: rgb(1, 30, 75);
@@ -228,14 +274,14 @@ button:hover {
   transform: translateY(-50%);
 }
 .footer {
-    position: absolute;
-    right: 5px;
-    bottom: 5px;
-    pointer-events: all;
-    z-index: 3;
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  pointer-events: all;
+  z-index: 3;
 }
 .footer img {
-  width:20px;
+  width: 20px;
 }
 .footer button {
   padding: 3px 3px 0 3px;
