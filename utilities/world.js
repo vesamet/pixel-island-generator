@@ -31,6 +31,32 @@ export default {
         elevation: Joi.string().trim().alphanum().min(1).max(100),
         moisture: Joi.string().trim().alphanum().min(1).max(100),
       }).default(),
+      chunk: Joi.object({
+        start: Joi.object({
+          width: Joi.number()
+            .integer()
+            .min(1)
+            .max(Joi.ref('....size.width'))
+            .required(),
+          height: Joi.number()
+            .integer()
+            .min(1)
+            .max(Joi.ref('....size.height'))
+            .required(),
+        }).required(),
+        end: Joi.object({
+          width: Joi.number()
+            .integer()
+            .min(Joi.ref('...start.width'))
+            .max(Joi.ref('....size.width'))
+            .required(),
+          height: Joi.number()
+            .integer()
+            .min(Joi.ref('...start.height'))
+            .max(Joi.ref('....size.height'))
+            .required(),
+        }).required(),
+      }),
       format: Joi.string().valid('collection', 'png').default('collection'),
     }).validate(options, {
       stripUnknown: true,
@@ -38,10 +64,20 @@ export default {
     if (error) return { error }
     if (!world.seed.elevation) world.seed.elevation = this.getRandomSeed()
     if (!world.seed.moisture) world.seed.moisture = this.getRandomSeed()
+    // Define number of blocks to generate
+    // (If a chunk is specified, use it, else render the whole map)
+    let start = {
+      x: world.chunk?.start?.width || 1,
+      y: world.chunk?.start?.height || 1,
+    }
+    let end = {
+      x: world.chunk?.end?.width || world.size.width,
+      y: world.chunk?.end?.height || world.size.height,
+    }
     // Generate world blocks
     let blocks = []
-    for (let x = 1; x <= world.size.width; x++) {
-      for (let y = 1; y <= world.size.height; y++) {
+    for (let x = start.x; x <= end.x; x++) {
+      for (let y = start.y; y <= end.y; y++) {
         const biome = this.getBiome(world, { x, y })
         blocks.push({
           position: {
@@ -306,7 +342,7 @@ export default {
   createMapImage(world, blocks) {
     let bmp = new Bitmap(world.size.width, world.size.height)
     blocks.forEach((block) => {
-      bmp.pixel[block.position.x -1][block.position.y -1] = [
+      bmp.pixel[block.position.x - 1][block.position.y - 1] = [
         block.biome.rgb[0] / 255,
         block.biome.rgb[1] / 255,
         block.biome.rgb[2] / 255,
