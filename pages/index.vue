@@ -9,14 +9,21 @@
     <Board
       :width="world.size.width * world.size.block"
       :height="world.size.height * world.size.block"
+      @on-move-end="onMoveEnd"
     >
       <template v-slot:board>
         <img v-if="mapBase64" :src="mapBase64" alt="Red dot" class="map" />
         <canvas
-          ref="canvas"
+          ref="mapCanvas"
           :width="world.size.width"
           :height="world.size.height"
           class="map"
+        ></canvas>
+        <canvas
+          ref="blocksCanvas"
+          class="blocks"
+          :width="offset * world.size.block * 2"
+          :height="offset * world.size.block * 2"
         ></canvas>
       </template>
       <template v-slot:controls>
@@ -34,6 +41,7 @@
           <div class="input-box">
             Size:
             <select v-model="size" name="size" style="max-width: 120px">
+              <option value="minuscule">Minuscule (200x200)</option>
               <option value="tiny">Tiny (500x500)</option>
               <option value="small">Small (1000x1000)</option>
               <option value="medium">Medium (2000x2000)</option>
@@ -108,8 +116,8 @@ export default {
     return {
       world: {
         size: {
-          width: 500,
-          height: 500,
+          width: 200,
+          height: 200,
           block: 10,
         },
         seed: {
@@ -120,12 +128,15 @@ export default {
 
         format: 'collection',
       },
-      size: 'small',
+      size: 'minuscule',
       mapBase64: '',
       canvas: false,
       loading: false,
       chunks: { loaded: 0, total: 0 },
       displaySettings: true,
+      blocks: [],
+      displayedBlocks: [],
+      offset: 100,
     }
   },
   methods: {
@@ -133,10 +144,16 @@ export default {
       // Reset render state
       this.mapBase64 = ''
       this.canvas = false
+      this.blocks = []
+      this.displayedBlocks = []
       this.chunks.loaded = 0
       this.chunks.total = 0
       // Set size
       switch (this.size) {
+        case 'minuscule':
+          this.world.size.width = 200
+          this.world.size.height = 200
+          break
         case 'tiny':
           this.world.size.width = 500
           this.world.size.height = 500
@@ -191,7 +208,7 @@ export default {
         counter++
       }
       //Render each chunk's blocks on map
-      const ctx = this.$refs.canvas.getContext('2d')
+      const ctx = this.$refs.mapCanvas.getContext('2d')
       await this.asyncForEach(chunks, async (chunk) => {
         let blocks = world.generate({
           ...this.world,
@@ -200,11 +217,14 @@ export default {
             end: { width: chunk[2], height: chunk[3] },
           },
         })
-        console.log(blocks.length)
         await this.asyncForEach(blocks, (block) => {
           let rgb = block.biome.rgb
           ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`
           ctx.fillRect(block.position.x - 1, block.position.y - 1, 1, 1)
+          //TODO: make it dynamic
+          if (block.biome.code === 'ocean') {
+            this.blocks.push(block)
+          }
         })
         this.chunks.loaded++
         await this.sleep(10) // Insure the browser update count
@@ -220,6 +240,42 @@ export default {
     async asyncForEach(array, callback) {
       for (let index = 0; index < array.length; index++) {
         await callback(array[index], index, array)
+      }
+    },
+    onMoveEnd(view) {
+      this.setDisplayedBlocks(view)
+    },
+    setDisplayedBlocks(view) {
+      let offset = this.offset
+      if (view.scale > 0.5) {
+        this.displayedBlocks = this.blocks.filter((block) => {
+          return (
+            block.position.x > view.x / this.world.size.block - offset &&
+            block.position.x < view.x / this.world.size.block + offset &&
+            block.position.y > view.y / this.world.size.block - offset &&
+            block.position.y < view.y / this.world.size.block + offset
+          )
+        })
+        this.$refs.blocksCanvas.style['top'] = `${
+          view.y - this.world.size.block * offset
+        }px`
+        this.$refs.blocksCanvas.style['left'] = `${
+          view.x - this.world.size.block * offset
+        }px`
+        const ctx = this.$refs.blocksCanvas.getContext('2d')
+
+        let rgb = [0, 0, 0]
+        // TODO: paint on block canvas
+        // this.displayedBlocks.forEach((block) => {
+        //   ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`
+        //   ctx.fillRect(block.position.x - 1, block.position.y - 1, 1, 1)
+        //   //TODO: make it dynamic
+        //   if (block.biome.code === 'ocean') {
+        //     this.blocks.push(block)
+        //   }
+        // })
+      } else {
+        this.displayedBlocks = []
       }
     },
   },
@@ -305,7 +361,7 @@ button:hover {
   position: absolute;
   width: 100%;
   height: 100%;
-  z-index: 2;
+  z-index: 3;
   color: white;
   background-color: black;
   opacity: 0.8;
@@ -332,5 +388,10 @@ button:hover {
 }
 .hidden {
   display: none;
+}
+.blocks {
+  position: absolute;
+  z-index: 2;
+  border: 4px solid red;
 }
 </style>
